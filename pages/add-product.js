@@ -1,52 +1,64 @@
 import { useState } from 'react';
+import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabaseClient';
-import Link from 'next/link';
+import Layout from '../components/Layout';
 
 export default function AddProduct() {
   const [name, setName] = useState('');
-  const [price, setPrice] = useState('');
-  const [status, setStatus] = useState('');
+  const [quantity, setQuantity] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
-  const handleAdd = async (e) => {
+  async function handleSubmit(e) {
     e.preventDefault();
-    setStatus('Saving...');
+    setLoading(true);
 
     const { error } = await supabase
       .from('products')
-      .insert([{ name, price: parseFloat(price) }]);
+      .insert([{ name, quantity: parseInt(quantity) }]);
 
     if (error) {
-      setStatus('Error: ' + error.message);
+      alert(error.message);
     } else {
-      setStatus('Success! Product added.');
-      setName('');
-      setPrice('');
+      router.push('/');
     }
-  };
+    setLoading(false);
+  }
 
   return (
-    <div style={{ padding: '40px', fontFamily: 'sans-serif', maxWidth: '500px', margin: '0 auto' }}>
-      <h1>Add New Inventory</h1>
-      <Link href="/">← Back to Dashboard</Link>
-      
-      <form onSubmit={handleAdd} style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
-        <input 
-          type="text" placeholder="Product Name (e.g. Solar Panel)" 
-          value={name} onChange={(e) => setName(e.target.value)} required 
-          style={inputStyle}
-        />
-        <input 
-          type="number" placeholder="Price (N$)" 
-          value={price} onChange={(e) => setPrice(e.target.value)} required 
-          style={inputStyle}
-        />
-        <button type="submit" style={buttonStyle}>Add to NamLogix Database</button>
-      </form>
-      
-      {status && <p style={{ marginTop: '20px', color: status.includes('Success') ? 'green' : 'red' }}>{status}</p>}
-    </div>
+    <Layout>
+      <div className="max-w-md mx-auto bg-white p-8 rounded-2xl shadow-lg border border-slate-100">
+        <h1 className="text-2xl font-bold text-slate-800 mb-6 text-center">Add New Product</h1>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-700">Product Name</label>
+            <input
+              type="text"
+              required
+              className="mt-1 block w-full border border-slate-300 rounded-md p-2"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700">Initial Stock Quantity</label>
+            <input
+              type="number"
+              required
+              className="mt-1 block w-full border border-slate-300 rounded-md p-2"
+              value={quantity}
+              onChange={(e) => setQuantity(e.target.value)}
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition"
+          >
+            {loading ? 'Saving...' : 'Confirm and Save'}
+          </button>
+        </form>
+      </div>
+    </Layout>
   );
 }
-
-const inputStyle = { padding: '10px', borderRadius: '5px', border: '1px solid #ccc' };
-const buttonStyle = { padding: '12px', background: '#0070f3', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' };
