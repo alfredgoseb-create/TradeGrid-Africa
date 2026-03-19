@@ -21,6 +21,7 @@ jobs:
       - name: Build
         run: npm run build
         env:
+          # This connects your GitHub Secrets to the code during build
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
       - name: Upload artifact

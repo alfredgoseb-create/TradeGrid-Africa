@@ -30,7 +30,6 @@ export default function Layout({ children }) {
           ))}
         </nav>
       </div>
-
       <main className="flex-1 p-8">
         {children}
       </main>
