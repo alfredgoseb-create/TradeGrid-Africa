@@ -1,128 +1,72 @@
-import { useEffect, useState } from 'react';
-import { supabase } from '../lib/supabaseClient';
-import Link from 'next/link';
+import { useState, useEffect } from 'react';
+import { supabase, deleteProduct } from '../lib/supabaseClient';
 
-export default function Home() {
-  const [stats, setStats] = useState({ products: 0, warehouses: 0, shipments: 0 });
-  const [searchQuery, setSearchQuery] = useState('');
-  const [products, setProducts] = useState([]);
+export default function Dashboard() {
+  const [inventory, setInventory] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchData() {
-      // 1. Get counts
-      const { count: pCount } = await supabase.from('products').select('*', { count: 'exact', head: true });
-      const { count: wCount } = await supabase.from('warehouses').select('*', { count: 'exact', head: true });
-      const { count: sCount } = await supabase.from('shipments').select('*', { count: 'exact', head: true });
-      
-      // 2. Get recent products for the search preview
-      const { data: pData } = await supabase.from('products').select('*').limit(5).order('id', { ascending: false });
-
-      setStats({ products: pCount || 0, warehouses: wCount || 0, shipments: sCount || 0 });
-      setProducts(pData || []);
-      setLoading(false);
-    }
-    fetchData();
+    fetchInventory();
   }, []);
 
-  // Filter products based on search input
-  const filteredProducts = products.filter(p => 
-    p.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  async function fetchInventory() {
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (!error) setInventory(data);
+    setLoading(false);
+  }
+
+  async function handleDelete(id, name) {
+    const confirmed = window.confirm(`Are you sure you want to delete ${name}?`);
+    if (!confirmed) return;
+
+    try {
+      await deleteProduct(id);
+      // Remove the item from the local state so the UI updates instantly
+      setInventory(inventory.filter(item => item.id !== id));
+      alert("Product removed successfully");
+    } catch (error) {
+      alert("Error deleting product: " + error.message);
+    }
+  }
 
   return (
-    <div style={containerStyle}>
-      {/* Sidebar Navigation */}
-      <nav style={sidebarStyle}>
-        <div style={{ padding: '20px' }}>
-          <h2 style={{ color: '#60a5fa', margin: '0 0 10px 0' }}>NamLogix</h2>
-          <p style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Logistics v1.0</p>
-        </div>
-        <div style={navGroup}>
-          <Link href="/products" style={navLink}>📦 Inventory</Link>
-          <Link href="/warehouse" style={navLink}>🏢 Warehouses</Link>
-          <Link href="/shipments" style={navLink}>🚚 Shipments</Link>
-          <div style={{ marginTop: '20px' }}>
-            <Link href="/add-product" style={addBtnStyle}>+ New Product</Link>
-          </div>
-        </div>
-      </nav>
-
-      {/* Main Content Area */}
-      <main style={mainContentStyle}>
-        <header style={headerStyle}>
-          <div style={{ flex: 1 }}>
-            <input 
-              type="text" 
-              placeholder="🔍 Search inventory..." 
-              style={searchBarStyle}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-          <div style={profileArea}>
-            <span style={{ marginRight: '10px' }}>Alfred Goseb</span>
-            <div style={avatarStyle}>AG</div>
-          </div>
-        </header>
-
-        {/* Stats Grid */}
-        <section style={gridStyle}>
-          <div style={statCard}>
-            <p style={cardLabel}>INVENTORY</p>
-            <p style={numberStyle}>{loading ? '...' : stats.products}</p>
-          </div>
-          <div style={statCard}>
-            <p style={cardLabel}>WAREHOUSES</p>
-            <p style={numberStyle}>{loading ? '...' : stats.warehouses}</p>
-          </div>
-          <div style={statCard}>
-            <p style={cardLabel}>SHIPMENTS</p>
-            <p style={numberStyle}>{loading ? '...' : stats.shipments}</p>
-          </div>
-        </section>
-
-        {/* Search Results / Recent Activity */}
-        <section style={recentSection}>
-          <h3 style={{ marginBottom: '20px' }}>{searchQuery ? 'Search Results' : 'Recently Added Items'}</h3>
-          <div style={tableContainer}>
-            {filteredProducts.length > 0 ? (
-              filteredProducts.map(p => (
-                <div key={p.id} style={tableRow}>
-                  <span>{p.name}</span>
-                  <span style={{ fontWeight: 'bold' }}>N${p.price}</span>
-                  <span style={statusTag}>In Stock</span>
-                </div>
-              ))
-            ) : (
-              <p style={{ color: '#64748b' }}>No items found.</p>
-            )}
-          </div>
-        </section>
-      </main>
+    <div className="p-8 bg-gray-50 min-h-screen">
+      <h1 className="text-2xl font-bold mb-6 text-blue-900">NamLogix Inventory</h1>
+      
+      <div className="bg-white rounded-lg shadow overflow-hidden">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product Name</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Stock</th>
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {inventory.map((item) => (
+              <tr key={item.id}>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{item.name}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.quantity}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <button 
+                    onClick={() => handleDelete(item.id, item.name)}
+                    className="text-red-600 hover:text-red-900 ml-4"
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {inventory.length === 0 && !loading && (
+          <p className="p-6 text-center text-gray-500">No items found in inventory.</p>
+        )}
+      </div>
     </div>
   );
 }
-
-// --- Modern Dashboard Styles ---
-const containerStyle = { display: 'flex', minHeight: '100vh', backgroundColor: '#f1f5f9', fontFamily: 'system-ui, sans-serif' };
-const sidebarStyle = { width: '240px', backgroundColor: '#1e293b', color: 'white', display: 'flex', flexDirection: 'column' };
-const navGroup = { display: 'flex', flexDirection: 'column', padding: '10px', gap: '5px' };
-const navLink = { color: '#cbd5e1', textDecoration: 'none', padding: '12px', borderRadius: '8px', fontSize: '0.95rem' };
-const addBtnStyle = { ...navLink, backgroundColor: '#2563eb', color: 'white', textAlign: 'center', fontWeight: 'bold' };
-
-const mainContentStyle = { flex: 1, padding: '30px', overflowY: 'auto' };
-const headerStyle = { display: 'flex', alignItems: 'center', marginBottom: '30px', gap: '20px' };
-const searchBarStyle = { width: '100%', maxWidth: '400px', padding: '12px 20px', borderRadius: '10px', border: '1px solid #e2e8f0', outline: 'none', fontSize: '1rem' };
-const profileArea = { display: 'flex', alignItems: 'center', color: '#475569', fontWeight: '500' };
-const avatarStyle = { width: '35px', height: '35px', borderRadius: '50%', backgroundColor: '#2563eb', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem' };
-
-const gridStyle = { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', marginBottom: '30px' };
-const statCard = { backgroundColor: 'white', padding: '20px', borderRadius: '12px', border: '1px solid #e2e8f0' };
-const cardLabel = { fontSize: '0.7rem', color: '#64748b', fontWeight: 'bold', letterSpacing: '1px' };
-const numberStyle = { fontSize: '2rem', fontWeight: 'bold', margin: '5px 0', color: '#1e293b' };
-
-const recentSection = { backgroundColor: 'white', padding: '25px', borderRadius: '12px', border: '1px solid #e2e8f0' };
-const tableContainer = { display: 'flex', flexDirection: 'column', gap: '10px' };
-const tableRow = { display: 'flex', justifyContent: 'space-between', padding: '15px', borderBottom: '1px solid #f1f5f9', alignItems: 'center' };
-const statusTag = { fontSize: '0.7rem', backgroundColor: '#dcfce7', color: '#166534', padding: '4px 8px', borderRadius: '5px', fontWeight: 'bold' };
