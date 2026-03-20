@@ -1,64 +1,71 @@
 import { useState } from 'react';
 import { useRouter } from 'next/router';
+import Link from 'next/link';
 import { supabase } from '../lib/supabaseClient';
-import Layout from '../components/Layout';
 
 export default function AddProduct() {
   const [name, setName] = useState('');
-  const [quantity, setQuantity] = useState(0);
+  const [quantity, setQuantity] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  async function handleSubmit(e) {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
 
-    const { error } = await supabase
-      .from('products')
-      .insert([{ name, quantity: parseInt(quantity) }]);
+    try {
+      const { error } = await supabase
+        .from('products')
+        .insert([{ name, quantity: parseInt(quantity) }]);
 
-    if (error) {
-      alert(error.message);
-    } else {
+      if (error) throw error;
       router.push('/');
+    } catch (err) {
+      alert('Error adding product: ' + err.message);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
-  }
+  };
 
   return (
-    <Layout>
-      <div className="max-w-md mx-auto bg-white p-8 rounded-2xl shadow-lg border border-slate-100">
-        <h1 className="text-2xl font-bold text-slate-800 mb-6 text-center">Add New Product</h1>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-700">Product Name</label>
-            <input
-              type="text"
+    <div style={{ padding: '40px', fontFamily: 'system-ui, sans-serif', maxWidth: '600px', margin: '0 auto' }}>
+      <Link href="/" style={{ color: '#2563eb', textDecoration: 'none', fontWeight: 'bold' }}>← Back to Dashboard</Link>
+      
+      <div style={{ marginTop: '30px', background: 'white', padding: '40px', borderRadius: '24px', border: '1px solid #e2e8f0', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}>
+        <h1 style={{ fontSize: '24px', fontWeight: '900', color: '#0f172a', marginBottom: '20px' }}>Add New Stock</h1>
+        
+        <form onSubmit={handleSubmit}>
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ display: 'block', fontSize: '14px', fontWeight: 'bold', color: '#64748b', marginBottom: '8px' }}>Product Name</label>
+            <input 
               required
-              className="mt-1 block w-full border border-slate-300 rounded-md p-2"
+              style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '16px' }}
               value={name}
               onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. Solar Panel 400W"
             />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700">Initial Stock Quantity</label>
-            <input
-              type="number"
+          
+          <div style={{ marginBottom: '30px' }}>
+            <label style={{ display: 'block', fontSize: '14px', fontWeight: 'bold', color: '#64748b', marginBottom: '8px' }}>Quantity</label>
+            <input 
               required
-              className="mt-1 block w-full border border-slate-300 rounded-md p-2"
+              type="number"
+              style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '16px' }}
               value={quantity}
               onChange={(e) => setQuantity(e.target.value)}
+              placeholder="0"
             />
           </div>
-          <button
-            type="submit"
+
+          <button 
             disabled={loading}
-            className="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition"
+            style={{ width: '100%', backgroundColor: '#2563eb', color: 'white', padding: '15px', borderRadius: '12px', border: 'none', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer' }}
           >
-            {loading ? 'Saving...' : 'Confirm and Save'}
+            {loading ? 'Saving to Database...' : 'Confirm & Add to Inventory'}
           </button>
         </form>
       </div>
-    </Layout>
+    </div>
   );
 }
