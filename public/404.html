@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>NamLogix Africa Redirect</title>
+    <script type="text/javascript">
+      // This script takes the 404 URL and sends it to the home page so Next.js can handle it
+      var pathSegmentToKeep = 0;
+      var l = window.location;
+      l.replace(
+        l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
+        l.pathname.split('/').slice(0, 1 + pathSegmentToKeep).join('/') + '/?p=/' +
+        l.pathname.split('/').slice(1 + pathSegmentToKeep).join('/').replace(/&/g, '~and~') +
+        (l.search ? '&q=' + l.search.slice(1).replace(/&/g, '~and~') : '') +
+        l.hash
+      );
+    </script>
+  </head>
+  <body></body>
+</html>
