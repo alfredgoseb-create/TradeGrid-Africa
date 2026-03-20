@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'export', // THIS IS THE MISSING PIECE
   reactStrictMode: true,
   images: {
     unoptimized: true,
