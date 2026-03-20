@@ -7,21 +7,23 @@ export default function Home() {
       fontFamily: 'system-ui, sans-serif', 
       textAlign: 'center',
       backgroundColor: '#f8fafc',
-      minHeight: '100vh'
+      minHeight: '100vh',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center'
     }}>
       <div style={{
         maxWidth: '600px',
-        margin: '0 auto',
         background: 'white',
         padding: '40px',
         borderRadius: '24px',
         boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)',
         border: '1px solid #e2e8f0'
       }}>
-        <h1 style={{ color: '#0f172a', fontSize: '36px', fontWeight: '900', marginBottom: '10px' }}>
+        <h1 style={{ color: '#0f172a', fontSize: '36px', fontWeight: '900', margin: '0 0 10px 0' }}>
           NamLogix Africa
         </h1>
-        <p style={{ color: '#64748b', fontSize: '18px', marginBottom: '30px' }}>
+        <p style={{ color: '#64748b', fontSize: '18px', margin: '0 0 30px 0' }}>
           Inventory System Deployment
         </p>
         
@@ -38,8 +40,8 @@ export default function Home() {
           </p>
         </div>
 
-        <p style={{ color: '#94a3b8', fontSize: '14px' }}>
-          Once this turns green, we will re-add your Supabase tables.
+        <p style={{ color: '#94a3b8', fontSize: '14px', margin: '0' }}>
+          Once this turns green, we will re-add your Supabase tables and dashboard.
         </p>
       </div>
     </div>
