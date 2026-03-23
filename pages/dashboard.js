@@ -6,18 +6,36 @@ export default function Dashboard() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  async function fetchInventory() {
+    setLoading(true);
+    const { data } = await supabase
+      .from('products')
+      .select('*')
+      .order('name', { ascending: true });
+    
+    if (data) setProducts(data);
+    setLoading(false);
+  }
+
   useEffect(() => {
-    async function fetchInventory() {
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .order('name', { ascending: true });
-      
-      if (data) setProducts(data);
-      setLoading(false);
-    }
     fetchInventory();
   }, []);
+
+  // New function to delete an item
+  const deleteItem = async (id) => {
+    if (confirm("Are you sure you want to delete this item?")) {
+      const { error } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        alert("Error deleting: " + error.message);
+      } else {
+        fetchInventory(); // Refresh the list after deleting
+      }
+    }
+  };
 
   return (
     <div style={{ padding: '40px', maxWidth: '1200px', margin: '0 auto', fontFamily: 'Arial, sans-serif' }}>
@@ -41,13 +59,14 @@ export default function Dashboard() {
               <th style={{ padding: '16px' }}>Stock Level</th>
               <th style={{ padding: '16px' }}>Supplier</th>
               <th style={{ padding: '16px' }}>Status</th>
+              <th style={{ padding: '16px' }}>Action</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan="4" style={{ padding: '20px', textAlign: 'center' }}>Loading inventory...</td></tr>
+              <tr><td colSpan="5" style={{ padding: '20px', textAlign: 'center' }}>Loading inventory...</td></tr>
             ) : products.length === 0 ? (
-              <tr><td colSpan="4" style={{ padding: '20px', textAlign: 'center' }}>No items found. Click "+ New Stock" to begin.</td></tr>
+              <tr><td colSpan="5" style={{ padding: '20px', textAlign: 'center' }}>No items found.</td></tr>
             ) : (
               products.map((item) => (
                 <tr key={item.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
@@ -62,6 +81,17 @@ export default function Dashboard() {
                     }}>
                       {item.status || 'Active'}
                     </span>
+                  </td>
+                  <td style={{ padding: '16px' }}>
+                    <button 
+                      onClick={() => deleteItem(item.id)}
+                      style={{ 
+                        backgroundColor: '#ef4444', color: 'white', border: 'none', 
+                        padding: '6px 12px', borderRadius: '6px', cursor: 'pointer' 
+                      }}
+                    >
+                      Delete
+                    </button>
                   </td>
                 </tr>
               ))
