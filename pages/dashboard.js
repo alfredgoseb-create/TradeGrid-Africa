@@ -27,7 +27,6 @@ export default function Dashboard() {
     fetchInventory();
   }, []);
 
-  // Handle Search and Filter logic
   useEffect(() => {
     let results = products.filter(item => 
       item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -35,92 +34,105 @@ export default function Dashboard() {
     );
 
     if (filterStatus !== 'All') {
-      results = results.filter(item => item.status === filterStatus);
+      const checkStatus = (level) => {
+        if (level > 10) return 'In Stock';
+        if (level > 0) return 'Low Stock';
+        return 'Out of Stock';
+      };
+      results = results.filter(item => checkStatus(item.stock_level) === filterStatus);
     }
-
     setFilteredProducts(results);
   }, [searchTerm, filterStatus, products]);
 
+  const downloadCSV = () => {
+    const headers = ['Product Name,Stock Level,Unit,Supplier,Status\n'];
+    const rows = filteredProducts.map(item => 
+      `${item.name},${item.stock_level},${item.unit || 'pcs'},${item.supplier},${item.stock_level > 0 ? 'In Stock' : 'Out of Stock'}`
+    );
+    const blob = new Blob([headers + rows.join('\n')], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `NamLogix_Inventory_${new Date().toLocaleDateString()}.csv`;
+    a.click();
+  };
+
   const deleteItem = async (id) => {
-    if (confirm("Are you sure you want to delete this item?")) {
-      const { error } = await supabase.from('products').delete().eq('id', id);
-      if (error) alert("Error: " + error.message);
-      else fetchInventory();
+    if (confirm("Are you sure?")) {
+      await supabase.from('products').delete().eq('id', id);
+      fetchInventory();
     }
   };
 
   return (
-    <div style={{ padding: '40px', maxWidth: '1200px', margin: '0 auto', fontFamily: 'Arial, sans-serif' }}>
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
-        <h1 style={{ color: '#1e40af', margin: 0 }}>NamLogix Africa Inventory</h1>
-        <Link href="/add-product">
-          <button style={{ backgroundColor: '#2563eb', color: 'white', padding: '12px 24px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}>
-            + New Stock
+    <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto', fontFamily: 'sans-serif' }}>
+      {/* Navigation Bar */}
+      <nav style={{ display: 'flex', gap: '20px', marginBottom: '30px', borderBottom: '1px solid #eee', paddingBottom: '10px' }}>
+        <Link href="/dashboard" style={{ fontWeight: 'bold', color: '#2563eb', textDecoration: 'none' }}>Dashboard</Link>
+        <Link href="/add-product" style={{ color: '#64748b', textDecoration: 'none' }}>Add Stock</Link>
+        <div style={{ marginLeft: 'auto', color: '#94a3b8', fontSize: '14px' }}>NamLogix Africa Management System</div>
+      </nav>
+
+      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+        <h1 style={{ color: '#1e40af' }}>Inventory Dashboard</h1>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button onClick={downloadCSV} style={{ backgroundColor: '#10b981', color: 'white', padding: '10px 20px', borderRadius: '8px', border: 'none', cursor: 'pointer' }}>
+            📥 Download Excel (CSV)
           </button>
-        </Link>
+          <Link href="/add-product">
+            <button style={{ backgroundColor: '#2563eb', color: 'white', padding: '10px 20px', borderRadius: '8px', border: 'none', cursor: 'pointer' }}>
+              + New Stock
+            </button>
+          </Link>
+        </div>
       </header>
 
-      {/* Search and Filter Section */}
-      <div style={{ display: 'flex', gap: '15px', marginBottom: '20px' }}>
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
         <input 
-          type="text" 
-          placeholder="Search by name or supplier..." 
-          value={searchTerm}
+          type="text" placeholder="Search inventory..." value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          style={{ padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0', flex: 1 }}
+          style={{ padding: '12px', borderRadius: '8px', border: '1px solid #ddd', flex: 1 }}
         />
-        <select 
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
-          style={{ padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0' }}
-        >
-          <option value="All">All Statuses</option>
+        <select onChange={(e) => setFilterStatus(e.target.value)} style={{ padding: '10px', borderRadius: '8px', border: '1px solid #ddd' }}>
+          <option value="All">All Status</option>
           <option value="In Stock">In Stock</option>
           <option value="Low Stock">Low Stock</option>
           <option value="Out of Stock">Out of Stock</option>
         </select>
       </div>
 
-      <div style={{ backgroundColor: 'white', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-          <thead>
-            <tr style={{ backgroundColor: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
-              <th style={{ padding: '16px' }}>Product</th>
-              <th style={{ padding: '16px' }}>Stock Level</th>
-              <th style={{ padding: '16px' }}>Supplier</th>
-              <th style={{ padding: '16px' }}>Status</th>
-              <th style={{ padding: '16px' }}>Actions</th>
+      <div style={{ background: 'white', borderRadius: '12px', boxShadow: '0 2px 10px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead style={{ background: '#f8fafc' }}>
+            <tr>
+              <th style={{ padding: '15px', textAlign: 'left' }}>Product</th>
+              <th style={{ padding: '15px', textAlign: 'left' }}>Stock</th>
+              <th style={{ padding: '15px', textAlign: 'left' }}>Supplier</th>
+              <th style={{ padding: '15px', textAlign: 'left' }}>Status</th>
+              <th style={{ padding: '15px', textAlign: 'left' }}>Actions</th>
             </tr>
           </thead>
           <tbody>
-            {loading ? (
-              <tr><td colSpan="5" style={{ padding: '20px', textAlign: 'center' }}>Loading...</td></tr>
-            ) : filteredProducts.length === 0 ? (
-              <tr><td colSpan="5" style={{ padding: '20px', textAlign: 'center' }}>No matching items found.</td></tr>
-            ) : (
-              filteredProducts.map((item) => (
-                <tr key={item.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                  <td style={{ padding: '16px', fontWeight: 'bold' }}>{item.name}</td>
-                  <td style={{ padding: '16px' }}>{item.stock_level} {item.unit || 'pcs'}</td>
-                  <td style={{ padding: '16px', color: '#64748b' }}>{item.supplier}</td>
-                  <td style={{ padding: '16px' }}>
-                    <span style={{ 
-                      padding: '4px 12px', borderRadius: '20px', fontSize: '12px', 
-                      backgroundColor: item.stock_level > 10 ? '#dcfce7' : item.stock_level > 0 ? '#fef9c3' : '#fee2e2', 
-                      color: item.stock_level > 10 ? '#166534' : item.stock_level > 0 ? '#854d0e' : '#991b1b' 
-                    }}>
-                      {item.stock_level > 10 ? 'In Stock' : item.stock_level > 0 ? 'Low Stock' : 'Out of Stock'}
-                    </span>
-                  </td>
-                  <td style={{ padding: '16px', display: 'flex', gap: '10px' }}>
-                    <Link href={`/edit-product?id=${item.id}`}>
-                      <button style={{ backgroundColor: '#f59e0b', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer' }}>Edit</button>
-                    </Link>
-                    <button onClick={() => deleteItem(item.id)} style={{ backgroundColor: '#ef4444', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer' }}>Delete</button>
-                  </td>
-                </tr>
-              ))
-            )}
+            {filteredProducts.map(item => (
+              <tr key={item.id} style={{ borderTop: '1px solid #f1f5f9' }}>
+                <td style={{ padding: '15px', fontWeight: 'bold' }}>{item.name}</td>
+                <td style={{ padding: '15px' }}>{item.stock_level} {item.unit || 'pcs'}</td>
+                <td style={{ padding: '15px' }}>{item.supplier}</td>
+                <td style={{ padding: '15px' }}>
+                  <span style={{ 
+                    padding: '4px 10px', borderRadius: '15px', fontSize: '12px',
+                    backgroundColor: item.stock_level > 10 ? '#dcfce7' : item.stock_level > 0 ? '#fef9c3' : '#fee2e2',
+                    color: item.stock_level > 10 ? '#166534' : item.stock_level > 0 ? '#854d0e' : '#991b1b'
+                  }}>
+                    {item.stock_level > 10 ? 'In Stock' : item.stock_level > 0 ? 'Low Stock' : 'Out of Stock'}
+                  </span>
+                </td>
+                <td style={{ padding: '15px', display: 'flex', gap: '8px' }}>
+                  <Link href={`/edit-product?id=${item.id}`}><button style={{ color: '#f59e0b', background: 'none', border: '1px solid #f59e0b', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer' }}>Edit</button></Link>
+                  <button onClick={() => deleteItem(item.id)} style={{ color: '#ef4444', background: 'none', border: '1px solid #ef4444', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer' }}>Delete</button>
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
