@@ -1,9 +1,10 @@
+// pages/shipments.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { toast } from 'react-hot-toast';
+import { supabase } from '../lib/supabaseClient';
 
-// 1. This "Interface" stops the red underlines by defining the data structure
 interface ShipmentSuggestion {
   mode: 'rail' | 'sea' | 'road' | 'air';
   display: string;
@@ -17,69 +18,92 @@ export default function SmartShipmentForm() {
   const [suggestion, setSuggestion] = useState<ShipmentSuggestion | null>(null);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  const supabase = createClientComponentClient();
+  useEffect(() => setMounted(true), []);
 
   const handleAnalyze = () => {
-    if (!inputText) return;
+    if (!inputText.trim()) {
+      toast.error('Please enter shipment details.');
+      return;
+    }
+
     const query = inputText.toLowerCase();
-    
-    // AI Logic for the 4 Trade Pillars
+
     if (query.includes('ship') || query.includes('sea') || query.includes('china')) {
-      setSuggestion({ mode: 'sea', display: '🚢 Sea Freight', route: 'Walvis Bay → Global', note: 'Bulk international export.' });
+      setSuggestion({
+        mode: 'sea',
+        display: '🚢 Sea Freight',
+        route: 'Walvis Bay → Global',
+        note: 'Bulk international export.',
+      });
     } else if (query.includes('train') || query.includes('rail')) {
-      setSuggestion({ mode: 'rail', display: '🚂 Rail Freight', route: 'Trans-Zambezi Line', note: 'Inland heavy cargo.' });
+      setSuggestion({
+        mode: 'rail',
+        display: '🚂 Rail Freight',
+        route: 'Trans-Zambezi Line',
+        note: 'Inland heavy cargo.',
+      });
     } else if (query.includes('fly') || query.includes('air')) {
-      setSuggestion({ mode: 'air', display: '✈️ Air Freight', route: 'HKIA Windhoek', note: 'High-value priority.' });
+      setSuggestion({
+        mode: 'air',
+        display: '✈️ Air Freight',
+        route: 'HKIA Windhoek',
+        note: 'High-value priority.',
+      });
     } else {
-      setSuggestion({ mode: 'road', display: '🚛 Road Freight', route: 'SADC Road Network', note: 'Flexible regional delivery.' });
+      setSuggestion({
+        mode: 'road',
+        display: '🚛 Road Freight',
+        route: 'SADC Road Network',
+        note: 'Flexible regional delivery.',
+      });
     }
   };
 
   const handleSave = async () => {
-    if (!suggestion) return;
+    if (!suggestion) {
+      toast.error('No shipment suggestion to save.');
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const { error } = await supabase
-        .from('shipments')
-        .insert([
-          {
-            commodity_name: inputText,
-            mode: suggestion.mode,
-            destination_port: suggestion.route,
-            status: 'Pending'
-          }
-        ]);
+      const { error } = await supabase.from('shipments').insert([
+        {
+          commodity_name: inputText,
+          mode: suggestion.mode,
+          destination_port: suggestion.route,
+          status: 'Pending',
+        },
+      ]);
 
       if (error) throw error;
-      alert('🚀 Shipment Registered!');
+
+      toast.success('🚀 Shipment Registered!');
       setInputText('');
       setSuggestion(null);
     } catch (err: any) {
-      alert(`Error: ${err.message}`);
+      toast.error(`Error saving shipment: ${err.message}`);
     } finally {
       setLoading(false);
     }
   };
 
-  if (!mounted) return <div className="h-40 w-full bg-slate-100 animate-pulse rounded-xl" />;
+  if (!mounted)
+    return <div className="h-40 w-full bg-slate-100 animate-pulse rounded-xl" />;
 
   return (
     <div className="max-w-2xl mx-auto p-6 bg-white rounded-2xl shadow-xl border border-slate-200 text-slate-900">
       <h2 className="text-xl font-bold mb-4">AI Trade Dispatcher</h2>
-      
-      <textarea 
+
+      <textarea
         className="w-full p-4 border rounded-xl mb-4 focus:ring-2 focus:ring-blue-500 outline-none"
         placeholder="e.g. 50 tons of copper via rail..."
         value={inputText}
         onChange={(e) => setInputText(e.target.value)}
       />
-      
-      <button 
+
+      <button
         onClick={handleAnalyze}
         className="bg-blue-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-blue-700 transition-all"
       >
@@ -98,11 +122,12 @@ export default function SmartShipmentForm() {
               <p className="font-bold">{suggestion.route}</p>
             </div>
           </div>
-          
-          <button 
+          <p className="mb-4 text-sm text-slate-700">{suggestion.note}</p>
+
+          <button
             onClick={handleSave}
             disabled={loading}
-            className="w-full bg-emerald-600 text-white py-3 rounded-xl font-bold hover:bg-emerald-700 transition-all"
+            className="w-full bg-emerald-600 text-white py-3 rounded-xl font-bold hover:bg-emerald-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? 'Saving...' : 'Confirm & Save'}
           </button>
