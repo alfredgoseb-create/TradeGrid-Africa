@@ -1,57 +1,38 @@
-import { useState } from 'react'
-import { supabase } from '../lib/supabaseClient'
+// pages/add-product.tsx
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 export default function AddProduct() {
-  const [name, setName] = useState('')
-  const [price, setPrice] = useState('')
-  const [stock, setStock] = useState('')
-
-  const handleSubmit = async (e: any) => {
-    e.preventDefault()
-
-    const { data, error } = await supabase?.from('products').insert([
-      {
-        name,
-        price: Number(price),
-        stock: Number(stock),
-      },
-    ])
-
-    if (error) {
-      alert('Error: ' + error.message)
-    } else {
-      alert('✅ Product added successfully!')
-      setName('')
-      setPrice('')
-      setStock('')
-    }
-  }
-
   return (
-    <div style={{ padding: 20 }}>
-      <h1>Add Product</h1>
+    <div className="p-8 bg-gray-50 min-h-screen">
+      <h1 className="text-3xl font-bold mb-6">Add New Product</h1>
 
-      <form onSubmit={handleSubmit}>
-        <input
-          placeholder="Product Name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        /><br /><br />
+      <Card className="max-w-md mx-auto">
+        <CardContent className="flex flex-col gap-4 p-6">
+          <input
+            type="text"
+            placeholder="Product Name"
+            className="border p-2 rounded"
+          />
+          <input
+            type="number"
+            placeholder="Price"
+            className="border p-2 rounded"
+          />
+          <textarea
+            placeholder="Description"
+            className="border p-2 rounded"
+          />
+          <Button>Add Product</Button>
+        </CardContent>
+      </Card>
 
-        <input
-          placeholder="Price"
-          value={price}
-          onChange={(e) => setPrice(e.target.value)}
-        /><br /><br />
-
-        <input
-          placeholder="Stock"
-          value={stock}
-          onChange={(e) => setStock(e.target.value)}
-        /><br /><br />
-
-        <button type="submit">Add Product</button>
-      </form>
+      <div className="mt-6 text-center">
+        <Link href="/">
+          <Button>⬅ Back to Dashboard</Button>
+        </Link>
+      </div>
     </div>
-  )
+  );
 }

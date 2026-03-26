@@ -1,27 +1,26 @@
-// pages/trades.tsx
+// pages/warehouse.tsx
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
-export default function Trades() {
-  const trades = [
-    { id: 1, product: "Product A", quantity: 10, total: 500 },
-    { id: 2, product: "Product B", quantity: 5, total: 375 },
-    { id: 3, product: "Product C", quantity: 8, total: 800 },
+export default function Warehouse() {
+  const items = [
+    { id: 1, name: "Product A", stock: 120 },
+    { id: 2, name: "Product B", stock: 80 },
+    { id: 3, name: "Product C", stock: 200 },
   ];
 
   return (
     <div className="p-8 bg-gray-50 min-h-screen">
-      <h1 className="text-3xl font-bold mb-6">Trades</h1>
+      <h1 className="text-3xl font-bold mb-6">Warehouse Inventory</h1>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-        {trades.map((t) => (
-          <Card key={t.id}>
+        {items.map((item) => (
+          <Card key={item.id}>
             <CardContent className="flex flex-col gap-2 p-4">
-              <h2 className="text-xl font-semibold">{t.product}</h2>
-              <p>Quantity: {t.quantity}</p>
-              <p>Total: ${t.total}</p>
-              <Button>📊 Details</Button>
+              <h2 className="text-xl font-semibold">{item.name}</h2>
+              <p>Stock: {item.stock}</p>
+              <Button>🔄 Update</Button>
             </CardContent>
           </Card>
         ))}
