@@ -1,73 +1,32 @@
-import { NextPage } from "next";
-import { useState } from "react";
+import { useEffect, useState } from 'react'
+import { supabase } from '../lib/supabaseClient'
 
-type Trade = {
-  id: string;
-  title: string;
-  company: string;
-  type: "Import" | "Export";
-  status: "Pending" | "Completed" | "Cancelled";
-  amount: number;
-  currency: string;
-  createdAt: string;
-};
+export default function Marketplace() {
+  const [products, setProducts] = useState<any[]>([])
 
-const mockTrades: Trade[] = [
-  {
-    id: "1",
-    title: "Electronics Shipment",
-    company: "NamTrade Ltd",
-    type: "Import",
-    status: "Pending",
-    amount: 50000,
-    currency: "USD",
-    createdAt: "2026-03-24T12:00:00Z",
-  },
-  {
-    id: "2",
-    title: "Agriculture Export",
-    company: "AgriCo Namibia",
-    type: "Export",
-    status: "Completed",
-    amount: 75000,
-    currency: "USD",
-    createdAt: "2026-03-22T09:30:00Z",
-  },
-];
+  useEffect(() => {
+    fetchProducts()
+  }, [])
 
-const TradesPage: NextPage = () => {
-  const [trades, setTrades] = useState<Trade[]>(mockTrades);
+  const fetchProducts = async () => {
+    const { data, error } = await supabase?.from('products').select('*')
+
+    if (error) {
+      console.log(error)
+    } else {
+      setProducts(data || [])
+    }
+  }
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Trade Listings</h1>
+    <div style={{ padding: 20 }}>
+      <h1>Marketplace</h1>
 
-      <table className="w-full table-auto border border-gray-300">
-        <thead>
-          <tr className="bg-gray-100">
-            <th className="border px-4 py-2">Title</th>
-            <th className="border px-4 py-2">Company</th>
-            <th className="border px-4 py-2">Type</th>
-            <th className="border px-4 py-2">Status</th>
-            <th className="border px-4 py-2">Amount</th>
-            <th className="border px-4 py-2">Date</th>
-          </tr>
-        </thead>
-        <tbody>
-          {trades.map((trade) => (
-            <tr key={trade.id}>
-              <td className="border px-4 py-2">{trade.title}</td>
-              <td className="border px-4 py-2">{trade.company}</td>
-              <td className="border px-4 py-2">{trade.type}</td>
-              <td className="border px-4 py-2">{trade.status}</td>
-              <td className="border px-4 py-2">{trade.amount} {trade.currency}</td>
-              <td className="border px-4 py-2">{new Date(trade.createdAt).toLocaleDateString()}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      {products.map((product) => (
+        <div key={product.id} style={{ marginBottom: 10 }}>
+          <strong>{product.name}</strong> - N${product.price} | Stock: {product.stock}
+        </div>
+      ))}
     </div>
-  );
-};
-
-export default TradesPage;
+  )
+}
