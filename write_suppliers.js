@@ -1,4 +1,5 @@
-"use client";
+const fs = require('fs');
+const code = `"use client";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
@@ -105,4 +106,6 @@ export default function SuppliersPage() {
       </div>
     </div>
   );
-}
+}`;
+fs.writeFileSync('app/admin/suppliers/page.tsx', code);
+console.log('File written successfully!');
