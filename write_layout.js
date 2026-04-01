@@ -1,4 +1,5 @@
-import "./globals.css";
+const fs = require('fs');
+const code = `import "./globals.css";
 
 export const metadata = {
   title: "NamLogix Africa",
@@ -11,4 +12,6 @@ export default function RootLayout({ children }) {
       <body>{children}</body>
     </html>
   );
-}
+}`;
+fs.writeFileSync('app/layout.tsx', code);
+console.log('Done!');
