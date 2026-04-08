@@ -1,4 +1,5 @@
-"use client";
+const fs = require('fs');
+const content = `"use client";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
@@ -160,7 +161,7 @@ export default function Dashboard() {
                           <div className="flex gap-2 mt-1 flex-wrap">
                             {product.category && <span className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded-full">{product.category}</span>}
                             {product.unit && <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">{product.unit}</span>}
-                            <span className={`text-xs px-2 py-1 rounded-full ${product.status === "active" ? "bg-green-50 text-green-600" : product.status === "out_of_stock" ? "bg-red-50 text-red-600" : "bg-gray-100 text-gray-500"}`}>{product.status}</span>
+                            <span className={\`text-xs px-2 py-1 rounded-full \${product.status === "active" ? "bg-green-50 text-green-600" : product.status === "out_of_stock" ? "bg-red-50 text-red-600" : "bg-gray-100 text-gray-500"}\`}>{product.status}</span>
                           </div>
                         </div>
                         <div className="flex flex-col gap-1 md:items-end">
@@ -182,4 +183,6 @@ export default function Dashboard() {
       </div>
     </div>
   );
-}
+}`;
+fs.writeFileSync('app/admin/dashboard/page.tsx', content);
+console.log('Dashboard with enhanced image previews updated!');
