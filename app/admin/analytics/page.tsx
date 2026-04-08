@@ -4,137 +4,276 @@ import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
 import Navbar from "@/app/components/Navbar";
 
-export default function AnalyticsPage() {
+const emptyForm = {
+  name: "",
+  category: "",
+  description: "",
+  unit: "",
+  status: "active",
+  supplier: "",
+  stock_level: "",
+  image_url: "",
+};
+
+export default function Dashboard() {
   const router = useRouter();
   const [products, setProducts] = useState<any[]>([]);
-  const [suppliers, setSuppliers] = useState<any[]>([]);
-  const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [form, setForm] = useState(emptyForm);
+  const [selectedProduct, setSelectedProduct] = useState<any>(null);
+  const [uploading, setUploading] = useState(false);
 
-  useEffect(() => { checkUser(); fetchData(); }, []);
+  useEffect(() => { checkUser(); fetchProducts(); }, []);
 
   async function checkUser() {
     const { data } = await supabase.auth.getUser();
     if (!data.user) router.push("/login");
   }
 
-  async function fetchData() {
+  async function fetchProducts() {
     setLoading(true);
-    const [p, s, o] = await Promise.all([
-      supabase.from("products").select("*"),
-      supabase.from("suppliers").select("*"),
-      supabase.from("orders").select("*"),
-    ]);
-    setProducts(p.data || []);
-    setSuppliers(s.data || []);
-    setOrders(o.data || []);
+    const { data, error } = await supabase
+      .from("products")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (error) alert("Failed to fetch products: " + error.message);
+    else setProducts(data || []);
     setLoading(false);
   }
 
-  const totalStock = products.reduce((acc, p) => acc + Number(p.stock || 0), 0);
-  const totalValue = products.reduce((acc, p) => acc + (Number(p.price || 0) * Number(p.stock || 0)), 0);
-  const avgPrice = products.length
-    ? products.reduce((acc, p) => acc + Number(p.price || 0), 0) / products.length
-    : 0;
-  const lowStock = products.filter(p => Number(p.stock) <= 5);
-  const totalOrders = orders.length;
-  const totalRevenue = orders.reduce((acc, o) => acc + Number(o.total_price || 0), 0);
+  async function handleImageUpload(file: File): Promise<string | null> {
+    const fileExt = file.name.split(".").pop();
+    const fileName = `${Date.now()}.${fileExt}`;
+    setUploading(true);
+    const { error } = await supabase.storage
+      .from("product-images")
+      .upload(fileName, file);
+    setUploading(false);
+    if (error) { alert("Upload failed: " + error.message); return null; }
+    const { data } = supabase.storage.from("product-images").getPublicUrl(fileName);
+    return data.publicUrl;
+  }
 
-  const stats = [
-    { label: "Total Products", value: products.length, color: "bg-blue-50 text-blue-700" },
-    { label: "Total Suppliers", value: suppliers.length, color: "bg-purple-50 text-purple-700" },
-    { label: "Total Stock Units", value: totalStock, color: "bg-green-50 text-green-700" },
-    { label: "Inventory Value", value: "N$" + totalValue.toFixed(2), color: "bg-yellow-50 text-yellow-700" },
-    { label: "Avg Product Price", value: "N$" + avgPrice.toFixed(2), color: "bg-pink-50 text-pink-700" },
-    { label: "Total Orders", value: totalOrders, color: "bg-orange-50 text-orange-700" },
-    { label: "Total Revenue", value: "N$" + totalRevenue.toFixed(2), color: "bg-teal-50 text-teal-700" },
-    { label: "Low Stock Items", value: lowStock.length, color: lowStock.length > 0 ? "bg-red-50 text-red-700" : "bg-green-50 text-green-700" },
-  ];
+  async function handleCreate(e: React.FormEvent) {
+    e.preventDefault();
+    if (!form.name) { alert("Name is required"); return; }
+    const { error } = await supabase.from("products").insert([{
+      ...form,
+      stock_level: Number(form.stock_level) || 0,
+    }]);
+    if (error) alert("Failed to add product: " + error.message);
+    else { setForm(emptyForm); fetchProducts(); }
+  }
+
+  async function handleUpdate(product: any) {
+    const { error } = await supabase.from("products")
+      .update({
+        name: product.name,
+        category: product.category,
+        description: product.description,
+        unit: product.unit,
+        status: product.status,
+        supplier: product.supplier,
+        stock_level: Number(product.stock_level) || 0,
+        image_url: product.image_url,
+      })
+      .eq("id", product.id);
+    if (error) alert("Failed to update: " + error.message);
+    else { setSelectedProduct(null); fetchProducts(); }
+  }
+
+  async function handleDelete(id: string) {
+    if (!confirm("Delete this product?")) return;
+    const { error } = await supabase.from("products").delete().eq("id", id);
+    if (error) alert("Failed to delete: " + error.message);
+    else fetchProducts();
+  }
+
+  const totalStock = products.reduce((acc, p) => acc + Number(p.stock_level || 0), 0);
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
       <div className="max-w-6xl mx-auto p-6">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold">Analytics</h1>
-          <p className="text-gray-500">Overview of your trade platform performance.</p>
+          <h1 className="text-3xl font-bold">Inventory Dashboard</h1>
+          <p className="text-gray-600">Manage products and inventory.</p>
         </div>
 
-        {loading ? (
-          <p>Loading analytics...</p>
-        ) : (
-          <>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
-              {stats.map((stat) => (
-                <div key={stat.label} className={`rounded-xl p-5 ${stat.color}`}>
-                  <p className="text-sm font-medium opacity-70">{stat.label}</p>
-                  <p className="text-2xl font-bold mt-1">{stat.value}</p>
+        <div className="grid md:grid-cols-2 gap-6 mb-10">
+          <div className="bg-white rounded-xl shadow p-6">
+            <h2 className="text-xl font-semibold mb-4">Add New Product</h2>
+            <form className="space-y-3" onSubmit={handleCreate}>
+              <input type="text" placeholder="Product Name *" value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                className="w-full border rounded-lg px-3 py-2" />
+              <div className="grid grid-cols-2 gap-3">
+                <input type="text" placeholder="Category" value={form.category}
+                  onChange={(e) => setForm({ ...form, category: e.target.value })}
+                  className="border rounded-lg px-3 py-2" />
+                <input type="text" placeholder="Unit (e.g. kg, box)" value={form.unit}
+                  onChange={(e) => setForm({ ...form, unit: e.target.value })}
+                  className="border rounded-lg px-3 py-2" />
+              </div>
+              <textarea placeholder="Description" value={form.description || ""}
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
+                className="w-full border rounded-lg px-3 py-2" />
+              <div className="grid grid-cols-2 gap-3">
+                <input type="number" placeholder="Stock Level" value={form.stock_level}
+                  onChange={(e) => setForm({ ...form, stock_level: e.target.value })}
+                  className="border rounded-lg px-3 py-2" />
+                <input type="text" placeholder="Supplier" value={form.supplier}
+                  onChange={(e) => setForm({ ...form, supplier: e.target.value })}
+                  className="border rounded-lg px-3 py-2" />
+              </div>
+              <select value={form.status}
+                onChange={(e) => setForm({ ...form, status: e.target.value })}
+                className="w-full border rounded-lg px-3 py-2">
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+                <option value="out_of_stock">Out of Stock</option>
+              </select>
+              <div>
+                <label className="text-sm text-gray-500 mb-1 block">Product Image</label>
+                <input type="file" accept="image/*"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const url = await handleImageUpload(file);
+                      if (url) setForm({ ...form, image_url: url });
+                    }
+                  }}
+                  className="w-full border rounded-lg px-3 py-2" />
+                {uploading && <p className="text-sm text-blue-500 mt-1">Uploading...</p>}
+                {form.image_url && (
+                  <img src={form.image_url} alt="Preview" className="mt-2 h-20 w-20 object-cover rounded-lg" />
+                )}
+              </div>
+              <button type="submit" className="w-full bg-black text-white py-2 rounded-lg hover:opacity-90">
+                Create Product
+              </button>
+            </form>
+          </div>
+
+          <div className="bg-white rounded-xl shadow p-6">
+            <h2 className="text-xl font-semibold mb-4">Inventory Snapshot</h2>
+            <p className="text-2xl font-bold">{products.length} products listed</p>
+            <p className="text-gray-500 mt-2">Total stock units: {totalStock}</p>
+            <p className="text-gray-500 mt-1">
+              Active: {products.filter(p => p.status === "active").length}
+            </p>
+            <p className="text-gray-500 mt-1">
+              Out of stock: {products.filter(p => Number(p.stock_level) === 0).length}
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl shadow p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold">All Products</h2>
+            <button onClick={fetchProducts} className="text-sm px-3 py-1 bg-gray-100 rounded-lg">Refresh</button>
+          </div>
+          {loading ? (
+            <p>Loading products...</p>
+          ) : products.length === 0 ? (
+            <p className="text-gray-500">No products yet.</p>
+          ) : (
+            <div className="space-y-4">
+              {products.map((product) => (
+                <div key={product.id} className="border rounded-xl p-4 flex flex-col md:flex-row gap-4">
+                  {product.image_url && (
+                    <img src={product.image_url} alt={product.name}
+                      className="h-20 w-20 object-cover rounded-lg flex-shrink-0" />
+                  )}
+                  <div className="flex-1">
+                    {selectedProduct && selectedProduct.id === product.id ? (
+                      <div className="space-y-2">
+                        <input type="text" value={selectedProduct.name}
+                          onChange={(e) => setSelectedProduct({ ...selectedProduct, name: e.target.value })}
+                          className="w-full border rounded px-3 py-2" />
+                        <div className="grid grid-cols-2 gap-2">
+                          <input type="text" placeholder="Category" value={selectedProduct.category || ""}
+                            onChange={(e) => setSelectedProduct({ ...selectedProduct, category: e.target.value })}
+                            className="border rounded px-3 py-2" />
+                          <input type="text" placeholder="Unit" value={selectedProduct.unit || ""}
+                            onChange={(e) => setSelectedProduct({ ...selectedProduct, unit: e.target.value })}
+                            className="border rounded px-3 py-2" />
+                        </div>
+                        <textarea value={selectedProduct.description || ""}
+                          onChange={(e) => setSelectedProduct({ ...selectedProduct, description: e.target.value })}
+                          className="w-full border rounded px-3 py-2" />
+                        <div className="grid grid-cols-2 gap-2">
+                          <input type="number" placeholder="Stock Level" value={selectedProduct.stock_level || 0}
+                            onChange={(e) => setSelectedProduct({ ...selectedProduct, stock_level: Number(e.target.value) })}
+                            className="border rounded px-3 py-2" />
+                          <input type="text" placeholder="Supplier" value={selectedProduct.supplier || ""}
+                            onChange={(e) => setSelectedProduct({ ...selectedProduct, supplier: e.target.value })}
+                            className="border rounded px-3 py-2" />
+                        </div>
+                        <select value={selectedProduct.status || "active"}
+                          onChange={(e) => setSelectedProduct({ ...selectedProduct, status: e.target.value })}
+                          className="w-full border rounded px-3 py-2">
+                          <option value="active">Active</option>
+                          <option value="inactive">Inactive</option>
+                          <option value="out_of_stock">Out of Stock</option>
+                        </select>
+                        <div>
+                          <label className="text-sm text-gray-500 mb-1 block">Change Image</label>
+                          <input type="file" accept="image/*"
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                const url = await handleImageUpload(file);
+                                if (url) setSelectedProduct({ ...selectedProduct, image_url: url });
+                              }
+                            }}
+                            className="w-full border rounded px-3 py-2" />
+                          {uploading && <p className="text-sm text-blue-500">Uploading...</p>}
+                        </div>
+                        <div className="flex gap-2">
+                          <button className="px-4 py-2 rounded bg-green-600 text-white"
+                            onClick={() => handleUpdate(selectedProduct)}>Save</button>
+                          <button className="px-4 py-2 rounded bg-gray-100"
+                            onClick={() => setSelectedProduct(null)}>Cancel</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                        <div>
+                          <h3 className="text-lg font-semibold">{product.name}</h3>
+                          <p className="text-gray-500 text-sm">{product.description}</p>
+                          <div className="flex gap-2 mt-1 flex-wrap">
+                            {product.category && (
+                              <span className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded-full">{product.category}</span>
+                            )}
+                            {product.unit && (
+                              <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">{product.unit}</span>
+                            )}
+                            <span className={`text-xs px-2 py-1 rounded-full ${
+                              product.status === "active" ? "bg-green-50 text-green-600" :
+                              product.status === "out_of_stock" ? "bg-red-50 text-red-600" :
+                              "bg-gray-100 text-gray-500"
+                            }`}>{product.status}</span>
+                          </div>
+                        </div>
+                        <div className="flex flex-col gap-1 md:items-end">
+                          <p className="text-sm text-gray-500">Stock: {product.stock_level || 0}</p>
+                          {product.supplier && <p className="text-xs text-gray-400">Supplier: {product.supplier}</p>}
+                          <div className="flex gap-2 mt-1">
+                            <button onClick={() => setSelectedProduct(product)}
+                              className="px-4 py-2 rounded bg-gray-100 text-sm">Edit</button>
+                            <button onClick={() => handleDelete(product.id)}
+                              className="px-4 py-2 rounded bg-red-50 text-red-600 text-sm">Delete</button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
-
-            {lowStock.length > 0 && (
-              <div className="bg-red-50 border border-red-200 rounded-xl p-6 mb-8">
-                <h2 className="text-lg font-semibold text-red-700 mb-3">
-                  Low Stock Alert ({lowStock.length} items)
-                </h2>
-                <div className="space-y-2">
-                  {lowStock.map((p) => (
-                    <div key={p.id} className="flex justify-between items-center bg-white rounded-lg px-4 py-2">
-                      <span className="font-medium">{p.name}</span>
-                      <span className="text-red-600 font-semibold">Stock: {p.stock}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div className="grid md:grid-cols-2 gap-6">
-              <div className="bg-white rounded-xl shadow p-6">
-                <h2 className="text-xl font-semibold mb-4">Products by Value</h2>
-                {products.length === 0 ? (
-                  <p className="text-gray-400">No products yet.</p>
-                ) : (
-                  <div className="space-y-3">
-                    {[...products]
-                      .sort((a, b) => (Number(b.price) * Number(b.stock)) - (Number(a.price) * Number(a.stock)))
-                      .slice(0, 5)
-                      .map((p) => (
-                        <div key={p.id} className="flex justify-between items-center">
-                          <span className="text-gray-700">{p.name}</span>
-                          <span className="font-semibold text-green-700">
-                            N${(Number(p.price || 0) * Number(p.stock || 0)).toFixed(2)}
-                          </span>
-                        </div>
-                      ))}
-                  </div>
-                )}
-              </div>
-
-              <div className="bg-white rounded-xl shadow p-6">
-                <h2 className="text-xl font-semibold mb-4">Suppliers by Category</h2>
-                {suppliers.length === 0 ? (
-                  <p className="text-gray-400">No suppliers yet.</p>
-                ) : (
-                  <div className="space-y-3">
-                    {Object.entries(
-                      suppliers.reduce((acc: any, s) => {
-                        const cat = s.category || "Uncategorized";
-                        acc[cat] = (acc[cat] || 0) + 1;
-                        return acc;
-                      }, {})
-                    ).map(([cat, count]) => (
-                      <div key={cat} className="flex justify-between items-center">
-                        <span className="text-gray-700">{cat}</span>
-                        <span className="font-semibold text-blue-700">{count as number} supplier{(count as number) > 1 ? "s" : ""}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          </>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
