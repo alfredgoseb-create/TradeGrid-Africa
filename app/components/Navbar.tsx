@@ -10,6 +10,10 @@ export default function Navbar() {
     { label: "Dashboard", href: "/admin/dashboard" },
     { label: "Suppliers", href: "/admin/suppliers" },
     { label: "Analytics", href: "/admin/analytics" },
+    { label: "Inquiries", href: "/admin/inquiries" },
+    { label: "Orders", href: "/admin/orders" },
+    { label: "Users", href: "/admin/users" },      // 👈 added for role management
+    { label: "Store", href: "/store" },
   ];
 
   async function handleLogout() {
