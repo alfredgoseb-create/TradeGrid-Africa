@@ -6,11 +6,14 @@ import Link from "next/link";
 
 type TradeRoute = {
   id: string;
-  origin_country: string;
-  destination_country: string;
-  transport_type: string;
+  origin: string;
+  destination: string;
+  carrier: string;
   estimated_days: number;
+  cost: number;
+  distance_km: number;
   description: string;
+  is_active: boolean;
 };
 
 export default function RoutesPage() {
@@ -28,7 +31,8 @@ export default function RoutesPage() {
     const { data, error } = await supabase
       .from("trade_routes")
       .select("*")
-      .order("origin_country", { ascending: true });
+      .eq("is_active", true)
+      .order("origin", { ascending: true });
     if (error) {
       console.error(error);
       alert("Failed to fetch routes: " + error.message);
@@ -39,8 +43,8 @@ export default function RoutesPage() {
   }
 
   const filteredRoutes = routes.filter(route => {
-    if (searchOrigin && !route.origin_country.toLowerCase().includes(searchOrigin.toLowerCase())) return false;
-    if (searchDest && !route.destination_country.toLowerCase().includes(searchDest.toLowerCase())) return false;
+    if (searchOrigin && !route.origin.toLowerCase().includes(searchOrigin.toLowerCase())) return false;
+    if (searchDest && !route.destination.toLowerCase().includes(searchDest.toLowerCase())) return false;
     return true;
   });
 
@@ -72,14 +76,14 @@ export default function RoutesPage() {
         <div className="bg-white rounded-xl shadow p-4 mb-8 flex flex-col sm:flex-row gap-4">
           <input
             type="text"
-            placeholder="From (origin country)"
+            placeholder="From (origin)"
             value={searchOrigin}
             onChange={(e) => setSearchOrigin(e.target.value)}
             className="flex-1 border rounded-lg px-3 py-2"
           />
           <input
             type="text"
-            placeholder="To (destination country)"
+            placeholder="To (destination)"
             value={searchDest}
             onChange={(e) => setSearchDest(e.target.value)}
             className="flex-1 border rounded-lg px-3 py-2"
@@ -100,10 +104,12 @@ export default function RoutesPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredRoutes.map((route) => (
               <div key={route.id} className="bg-white rounded-xl shadow p-6 hover:shadow-lg transition">
-                <h3 className="text-xl font-bold">{route.origin_country} → {route.destination_country}</h3>
-                {route.transport_type && <p className="text-sm text-gray-600 mt-1">🚚 {route.transport_type}</p>}
+                <h3 className="text-xl font-bold">{route.origin} → {route.destination}</h3>
+                {route.carrier && <p className="text-sm text-gray-600 mt-1">Carrier: {route.carrier}</p>}
                 <div className="mt-4 space-y-2 text-sm">
                   {route.estimated_days && <p>⏱️ Estimated transit: {route.estimated_days} days</p>}
+                  {route.distance_km && <p>📏 Distance: {route.distance_km.toLocaleString()} km</p>}
+                  {route.cost && <p className="font-semibold text-lg text-green-600">N${route.cost.toLocaleString()}</p>}
                   {route.description && <p className="text-gray-500 text-xs mt-2">{route.description}</p>}
                 </div>
               </div>

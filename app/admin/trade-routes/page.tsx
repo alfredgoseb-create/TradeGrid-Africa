@@ -7,12 +7,16 @@ import Navbar from "@/app/components/Navbar";
 
 type TradeRoute = {
   id: string;
-  origin_country: string;
-  destination_country: string;
-  transport_type: string;
+  origin: string;
+  destination: string;
+  carrier: string;
   estimated_days: number;
+  cost: number;
+  distance_km: number;
   description: string;
+  is_active: boolean;
   created_at: string;
+  updated_at: string;
 };
 
 export default function TradeRoutesPage() {
@@ -22,11 +26,14 @@ export default function TradeRoutesPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingRoute, setEditingRoute] = useState<TradeRoute | null>(null);
   const [form, setForm] = useState({
-    origin_country: "",
-    destination_country: "",
-    transport_type: "",
+    origin: "",
+    destination: "",
+    carrier: "",
     estimated_days: "",
+    cost: "",
+    distance_km: "",
     description: "",
+    is_active: true,
   });
 
   useEffect(() => {
@@ -44,7 +51,7 @@ export default function TradeRoutesPage() {
     const { data, error } = await supabase
       .from("trade_routes")
       .select("*")
-      .order("origin_country", { ascending: true });
+      .order("origin", { ascending: true });
     if (error) {
       alert("Failed to fetch routes: " + error.message);
       console.error(error);
@@ -56,16 +63,19 @@ export default function TradeRoutesPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!form.origin_country || !form.destination_country) {
+    if (!form.origin || !form.destination) {
       alert("Origin and destination are required");
       return;
     }
     const payload = {
-      origin_country: form.origin_country,
-      destination_country: form.destination_country,
-      transport_type: form.transport_type || null,
+      origin: form.origin,
+      destination: form.destination,
+      carrier: form.carrier || null,
       estimated_days: form.estimated_days ? parseInt(form.estimated_days) : null,
+      cost: form.cost ? parseFloat(form.cost) : null,
+      distance_km: form.distance_km ? parseInt(form.distance_km) : null,
       description: form.description || null,
+      is_active: form.is_active,
     };
     if (editingRoute) {
       const { error } = await supabase
@@ -84,15 +94,27 @@ export default function TradeRoutesPage() {
       else {
         setShowForm(false);
         setForm({
-          origin_country: "",
-          destination_country: "",
-          transport_type: "",
+          origin: "",
+          destination: "",
+          carrier: "",
           estimated_days: "",
+          cost: "",
+          distance_km: "",
           description: "",
+          is_active: true,
         });
         fetchRoutes();
       }
     }
+  }
+
+  async function toggleActive(id: string, currentActive: boolean) {
+    const { error } = await supabase
+      .from("trade_routes")
+      .update({ is_active: !currentActive })
+      .eq("id", id);
+    if (error) alert("Failed to update status: " + error.message);
+    else fetchRoutes();
   }
 
   async function deleteRoute(id: string) {
@@ -109,17 +131,20 @@ export default function TradeRoutesPage() {
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-3xl font-bold">Trade Routes</h1>
-            <p className="text-gray-600">Manage shipping routes, transport types, and transit times.</p>
+            <p className="text-gray-600">Manage shipping routes, carriers, and transit times.</p>
           </div>
           <button
             onClick={() => {
               setEditingRoute(null);
               setForm({
-                origin_country: "",
-                destination_country: "",
-                transport_type: "",
+                origin: "",
+                destination: "",
+                carrier: "",
                 estimated_days: "",
+                cost: "",
+                distance_km: "",
                 description: "",
+                is_active: true,
               });
               setShowForm(true);
             }}
@@ -137,53 +162,69 @@ export default function TradeRoutesPage() {
           </div>
         ) : (
           <div className="bg-white rounded-xl shadow overflow-hidden">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Origin</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Destination</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Transport</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Est. Days</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {routes.map((route) => (
-                  <tr key={route.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{route.origin_country}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{route.destination_country}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{route.transport_type || "—"}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{route.estimated_days || "—"}</td>
-                    <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">{route.description || "—"}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <button
-                        onClick={() => {
-                          setEditingRoute(route);
-                          setForm({
-                            origin_country: route.origin_country,
-                            destination_country: route.destination_country,
-                            transport_type: route.transport_type || "",
-                            estimated_days: route.estimated_days?.toString() || "",
-                            description: route.description || "",
-                          });
-                          setShowForm(true);
-                        }}
-                        className="text-blue-600 hover:text-blue-900 mr-3"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => deleteRoute(route.id)}
-                        className="text-red-600 hover:text-red-900"
-                      >
-                        Delete
-                      </button>
-                    </td>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Origin</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Destination</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Carrier</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Est. Days</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cost (N$)</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Distance (km)</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Active</th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {routes.map((route) => (
+                    <tr key={route.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{route.origin}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{route.destination}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{route.carrier || "—"}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{route.estimated_days || "—"}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{route.cost ? `N$${route.cost}` : "—"}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{route.distance_km || "—"}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <button
+                          onClick={() => toggleActive(route.id, route.is_active)}
+                          className={`px-2 py-1 text-xs rounded-full ${route.is_active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}
+                        >
+                          {route.is_active ? "Active" : "Inactive"}
+                        </button>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <button
+                          onClick={() => {
+                            setEditingRoute(route);
+                            setForm({
+                              origin: route.origin,
+                              destination: route.destination,
+                              carrier: route.carrier || "",
+                              estimated_days: route.estimated_days?.toString() || "",
+                              cost: route.cost?.toString() || "",
+                              distance_km: route.distance_km?.toString() || "",
+                              description: route.description || "",
+                              is_active: route.is_active,
+                            });
+                            setShowForm(true);
+                          }}
+                          className="text-blue-600 hover:text-blue-900 mr-3"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => deleteRoute(route.id)}
+                          className="text-red-600 hover:text-red-900"
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
 
@@ -197,46 +238,69 @@ export default function TradeRoutesPage() {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-sm font-medium mb-1">Origin Country *</label>
+                    <label className="block text-sm font-medium mb-1">Origin *</label>
                     <input
                       type="text"
-                      value={form.origin_country}
-                      onChange={(e) => setForm({ ...form, origin_country: e.target.value })}
+                      value={form.origin}
+                      onChange={(e) => setForm({ ...form, origin: e.target.value })}
                       className="w-full border rounded px-3 py-2"
                       required
-                      placeholder="e.g., Namibia"
+                      placeholder="e.g., Walvis Bay"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1">Destination Country *</label>
+                    <label className="block text-sm font-medium mb-1">Destination *</label>
                     <input
                       type="text"
-                      value={form.destination_country}
-                      onChange={(e) => setForm({ ...form, destination_country: e.target.value })}
+                      value={form.destination}
+                      onChange={(e) => setForm({ ...form, destination: e.target.value })}
                       className="w-full border rounded px-3 py-2"
                       required
-                      placeholder="e.g., South Africa"
+                      placeholder="e.g., Durban"
                     />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Transport Type</label>
+                  <label className="block text-sm font-medium mb-1">Carrier</label>
                   <input
                     type="text"
-                    value={form.transport_type}
-                    onChange={(e) => setForm({ ...form, transport_type: e.target.value })}
+                    value={form.carrier}
+                    onChange={(e) => setForm({ ...form, carrier: e.target.value })}
                     className="w-full border rounded px-3 py-2"
-                    placeholder="e.g., Road, Rail, Air, Sea"
+                    placeholder="e.g., NamPost, DHL"
                   />
                 </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Estimated Days</label>
+                    <input
+                      type="number"
+                      value={form.estimated_days}
+                      onChange={(e) => setForm({ ...form, estimated_days: e.target.value })}
+                      className="w-full border rounded px-3 py-2"
+                      placeholder="5"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Cost (N$)</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={form.cost}
+                      onChange={(e) => setForm({ ...form, cost: e.target.value })}
+                      className="w-full border rounded px-3 py-2"
+                      placeholder="1500.00"
+                    />
+                  </div>
+                </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Estimated Days</label>
+                  <label className="block text-sm font-medium mb-1">Distance (km)</label>
                   <input
                     type="number"
-                    value={form.estimated_days}
-                    onChange={(e) => setForm({ ...form, estimated_days: e.target.value })}
+                    value={form.distance_km}
+                    onChange={(e) => setForm({ ...form, distance_km: e.target.value })}
                     className="w-full border rounded px-3 py-2"
-                    placeholder="5"
+                    placeholder="1200"
                   />
                 </div>
                 <div>
@@ -246,8 +310,19 @@ export default function TradeRoutesPage() {
                     value={form.description}
                     onChange={(e) => setForm({ ...form, description: e.target.value })}
                     className="w-full border rounded px-3 py-2"
-                    placeholder="Additional details about this route..."
+                    placeholder="Additional details..."
                   />
+                </div>
+                <div className="flex items-center gap-3">
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={form.is_active}
+                      onChange={(e) => setForm({ ...form, is_active: e.target.checked })}
+                      className="rounded"
+                    />
+                    Active (visible to customers)
+                  </label>
                 </div>
                 <div className="flex gap-3 pt-2">
                   <button type="submit" className="flex-1 bg-blue-600 text-white py-2 rounded-lg">
