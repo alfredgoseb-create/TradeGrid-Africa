@@ -1,4 +1,4 @@
-// app/store/[id]/page.tsx (full replacement)
+// app/store/[id]/page.tsx
 "use client";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
@@ -121,7 +121,6 @@ export default function ProductDetailPage() {
       setSending(false);
       return;
     }
-    // Send confirmation email (optional)
     try {
       await fetch("/api/send-order-confirmation", {
         method: "POST",
@@ -140,8 +139,6 @@ export default function ProductDetailPage() {
     setShowOrderForm(false);
     setOrder({ quantity: 1, customer_name: "", customer_email: "", delivery_address: "" });
     setSending(false);
-    // Optionally redirect to a thank you page
-    // router.push("/order-confirmation");
   }
 
   if (loading) {
@@ -157,13 +154,21 @@ export default function ProductDetailPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+        <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center flex-wrap gap-4">
           <h1 className="text-2xl font-bold">
             NamLogix <span className="text-blue-600">AFRICA</span>
           </h1>
-          <Link href="/store" className="text-sm text-blue-600 hover:underline">
-            ← Back to Store
-          </Link>
+          <div className="flex gap-4">
+            <Link href="/routes" className="text-sm text-gray-600 hover:text-gray-900">
+              Trade Routes
+            </Link>
+            <Link href="/order-status" className="text-sm text-gray-600 hover:text-gray-900">
+              Track Order
+            </Link>
+            <Link href="/login" className="text-sm text-gray-600 hover:text-gray-900">
+              Admin Login
+            </Link>
+          </div>
         </div>
       </header>
 

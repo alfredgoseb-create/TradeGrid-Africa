@@ -13,7 +13,8 @@ export default function Navbar() {
     { label: "Inquiries", href: "/admin/inquiries" },
     { label: "Orders", href: "/admin/orders" },
     { label: "Users", href: "/admin/users" },
-    { label: "Shipments", href: "/admin/shipments" },   // 👈 added shipments link
+    { label: "Shipments", href: "/admin/shipments" },
+    { label: "Trade Routes", href: "/admin/trade-routes" },   // 👈 added
     { label: "Store", href: "/store" },
   ];
 
