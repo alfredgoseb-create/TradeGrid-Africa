@@ -12,7 +12,8 @@ export default function Navbar() {
     { label: "Analytics", href: "/admin/analytics" },
     { label: "Inquiries", href: "/admin/inquiries" },
     { label: "Orders", href: "/admin/orders" },
-    { label: "Users", href: "/admin/users" },      // 👈 added for role management
+    { label: "Users", href: "/admin/users" },
+    { label: "Shipments", href: "/admin/shipments" },   // 👈 added shipments link
     { label: "Store", href: "/store" },
   ];
 
