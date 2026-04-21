@@ -1,4 +1,3 @@
-// app/store/page.tsx
 "use client";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
@@ -73,6 +72,15 @@ export default function StorePage() {
             NamLogix <span className="text-blue-600">AFRICA</span>
           </h1>
           <div className="flex gap-4">
+            <Link href="/request-cargo" className="text-sm text-gray-600 hover:text-gray-900">
+              Request Cargo
+            </Link>
+            <Link href="/cargo-bids" className="text-sm text-gray-600 hover:text-gray-900">
+              Place Bid
+            </Link>
+            <Link href="/trip-offers" className="text-sm text-gray-600 hover:text-gray-900">
+              Find a Ride
+            </Link>
             <Link href="/routes" className="text-sm text-gray-600 hover:text-gray-900">
               Trade Routes
             </Link>

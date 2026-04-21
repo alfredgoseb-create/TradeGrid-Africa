@@ -131,7 +131,7 @@ export default function TradeRoutesPage() {
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-3xl font-bold">Trade Routes</h1>
-            <p className="text-gray-600">Manage shipping routes, carriers, and transit times.</p>
+            <p className="text-gray-600">Manage shipping routes, carriers, transit times, and descriptions.</p>
           </div>
           <button
             onClick={() => {
@@ -172,6 +172,7 @@ export default function TradeRoutesPage() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Est. Days</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cost (N$)</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Distance (km)</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Active</th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                   </tr>
@@ -185,6 +186,7 @@ export default function TradeRoutesPage() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{route.estimated_days || "—"}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{route.cost ? `N$${route.cost}` : "—"}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{route.distance_km || "—"}</td>
+                      <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">{route.description || "—"}</td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <button
                           onClick={() => toggleActive(route.id, route.is_active)}
@@ -310,7 +312,7 @@ export default function TradeRoutesPage() {
                     value={form.description}
                     onChange={(e) => setForm({ ...form, description: e.target.value })}
                     className="w-full border rounded px-3 py-2"
-                    placeholder="Additional details..."
+                    placeholder="Additional details about this route..."
                   />
                 </div>
                 <div className="flex items-center gap-3">

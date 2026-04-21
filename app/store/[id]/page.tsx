@@ -230,7 +230,7 @@ export default function ProductDetailPage() {
         {/* Contact Form Modal */}
         {showContactForm && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-xl max-w-md w-full p-6">
+            <div className="bg-white rounded-xl max-w-md w-full p-6 max-h-screen overflow-y-auto">
               <h3 className="text-xl font-bold mb-4">Inquire about {product.name}</h3>
               <form onSubmit={handleSendInquiry} className="space-y-4">
                 <div>
@@ -257,7 +257,7 @@ export default function ProductDetailPage() {
         {/* Order Form Modal */}
         {showOrderForm && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-xl max-w-md w-full p-6">
+            <div className="bg-white rounded-xl max-w-md w-full p-6 max-h-screen overflow-y-auto">
               <h3 className="text-xl font-bold mb-4">Order {product.name}</h3>
               <form onSubmit={handlePlaceOrder} className="space-y-4">
                 <div>

@@ -7,15 +7,27 @@ export default function Navbar() {
   const pathname = usePathname();
 
   const links = [
+    { label: "Warehouses", href: "/admin/warehouses" },
+{ label: "Stock Locations", href: "/admin/stock-locations" },
+{ label: "Stock Transactions", href: "/admin/stock-transactions" },
     { label: "Dashboard", href: "/admin/dashboard" },
     { label: "Suppliers", href: "/admin/suppliers" },
     { label: "Analytics", href: "/admin/analytics" },
     { label: "Inquiries", href: "/admin/inquiries" },
+    { label: "Warehouse Dashboard", href: "/admin/warehouse-dashboard" },
     { label: "Orders", href: "/admin/orders" },
     { label: "Users", href: "/admin/users" },
+    { label: "Cargo Requests", href: "/admin/cargo-requests" },
+    { label: "Trip Offers", href: "/admin/trip-offers" },
+{ label: "Trip Bookings", href: "/admin/trip-bookings" },
+    { label: "Vehicles", href: "/admin/vehicles" },
+    { label: "Barcode Scanner", href: "/admin/barcode-scanner" },
     { label: "Shipments", href: "/admin/shipments" },
-    { label: "Trade Routes", href: "/admin/trade-routes" },   // 👈 added
+    { label: "Bids", href: "/admin/bids" },
+    { label: "Trade Routes", href: "/admin/trade-routes" },
+    { label: "Customs Docs", href: "/admin/customs-documents" },  // 👈 NEW
     { label: "Store", href: "/store" },
+    { label: "Warehouse Transfers", href: "/admin/warehouse-transfers" },
   ];
 
   async function handleLogout() {
