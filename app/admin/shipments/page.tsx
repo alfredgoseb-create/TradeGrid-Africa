@@ -53,7 +53,6 @@ export default function ShipmentsPage() {
     setLoading(true);
     setError(null);
     try {
-      // Fetch shipments with order details
       const { data: shipmentsData, error: sError } = await supabase
         .from("shipments")
         .select(`*, orders ( product_name, customer_name )`)
@@ -66,7 +65,6 @@ export default function ShipmentsPage() {
         setShipments(shipmentsData || []);
       }
 
-      // Fetch orders without shipments (to assign new shipments)
       const { data: ordersData, error: oError } = await supabase
         .from("orders")
         .select("id, order_number, product_name, customer_name");
@@ -74,7 +72,6 @@ export default function ShipmentsPage() {
       if (oError) {
         console.error("Orders fetch error:", oError);
       } else {
-        // Filter out orders that already have a shipment
         const shippedOrderIds = (shipmentsData || []).map(s => s.order_id).filter(Boolean);
         const availableOrders = (ordersData || []).filter(o => !shippedOrderIds.includes(o.id));
         setOrders(availableOrders);
@@ -194,6 +191,112 @@ export default function ShipmentsPage() {
           </div>
         )}
 
+        {/* Inline form (replaces the modal) */}
+        {showForm && (
+          <div className="bg-white rounded-xl shadow p-6 mb-8">
+            <h2 className="text-xl font-bold mb-4">
+              {editingShipment ? "Edit Shipment" : "New Shipment"}
+            </h2>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Order (optional)</label>
+                <select
+                  value={form.order_id}
+                  onChange={(e) => setForm({ ...form, order_id: e.target.value })}
+                  className="w-full border rounded px-3 py-2"
+                >
+                  <option value="">None</option>
+                  {orders.map((order) => (
+                    <option key={order.id} value={order.id}>
+                      {order.order_number} - {order.product_name} ({order.customer_name})
+                    </option>
+                  ))}
+                  {editingShipment && editingShipment.order_id && (
+                    <option value={editingShipment.order_id}>
+                      Existing order (ID: {editingShipment.order_id.slice(0,8)})
+                    </option>
+                  )}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Tracking Number *</label>
+                <input
+                  type="text"
+                  value={form.tracking_number}
+                  onChange={(e) => setForm({ ...form, tracking_number: e.target.value })}
+                  className="w-full border rounded px-3 py-2"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Carrier</label>
+                <input
+                  type="text"
+                  value={form.carrier}
+                  onChange={(e) => setForm({ ...form, carrier: e.target.value })}
+                  placeholder="e.g., DHL, FedEx, NamPost"
+                  className="w-full border rounded px-3 py-2"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Status</label>
+                <select
+                  value={form.status}
+                  onChange={(e) => setForm({ ...form, status: e.target.value })}
+                  className="w-full border rounded px-3 py-2"
+                >
+                  <option value="pending">Pending</option>
+                  <option value="processing">Processing</option>
+                  <option value="in_transit">In Transit</option>
+                  <option value="customs_hold">Customs Hold</option>
+                  <option value="delivered">Delivered</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Current Location</label>
+                <input
+                  type="text"
+                  value={form.current_location}
+                  onChange={(e) => setForm({ ...form, current_location: e.target.value })}
+                  placeholder="City, Country"
+                  className="w-full border rounded px-3 py-2"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Estimated Delivery Date</label>
+                <input
+                  type="date"
+                  value={form.estimated_delivery}
+                  onChange={(e) => setForm({ ...form, estimated_delivery: e.target.value })}
+                  className="w-full border rounded px-3 py-2"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Notes</label>
+                <textarea
+                  rows={3}
+                  value={form.notes}
+                  onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                  className="w-full border rounded px-3 py-2"
+                />
+              </div>
+              <div className="flex gap-3">
+                <button type="submit" className="flex-1 bg-blue-600 text-white py-2 rounded-lg">
+                  {editingShipment ? "Save Changes" : "Create Shipment"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowForm(false)}
+                  className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
         {loading ? (
           <p>Loading...</p>
         ) : shipments.length === 0 ? (
@@ -268,114 +371,6 @@ export default function ShipmentsPage() {
                 </div>
               </div>
             ))}
-          </div>
-        )}
-
-        {/* Modal Form */}
-        {showForm && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-xl max-w-lg w-full p-6 max-h-[90vh] overflow-y-auto">
-              <h2 className="text-xl font-bold mb-4">
-                {editingShipment ? "Edit Shipment" : "New Shipment"}
-              </h2>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Order (optional)</label>
-                  <select
-                    value={form.order_id}
-                    onChange={(e) => setForm({ ...form, order_id: e.target.value })}
-                    className="w-full border rounded px-3 py-2"
-                  >
-                    <option value="">None</option>
-                    {orders.map((order) => (
-                      <option key={order.id} value={order.id}>
-                        {order.order_number} - {order.product_name} ({order.customer_name})
-                      </option>
-                    ))}
-                    {editingShipment && editingShipment.order_id && (
-                      <option value={editingShipment.order_id}>
-                        Existing order (ID: {editingShipment.order_id.slice(0,8)})
-                      </option>
-                    )}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Tracking Number *</label>
-                  <input
-                    type="text"
-                    value={form.tracking_number}
-                    onChange={(e) => setForm({ ...form, tracking_number: e.target.value })}
-                    className="w-full border rounded px-3 py-2"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Carrier</label>
-                  <input
-                    type="text"
-                    value={form.carrier}
-                    onChange={(e) => setForm({ ...form, carrier: e.target.value })}
-                    placeholder="e.g., DHL, FedEx, NamPost"
-                    className="w-full border rounded px-3 py-2"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Status</label>
-                  <select
-                    value={form.status}
-                    onChange={(e) => setForm({ ...form, status: e.target.value })}
-                    className="w-full border rounded px-3 py-2"
-                  >
-                    <option value="pending">Pending</option>
-                    <option value="processing">Processing</option>
-                    <option value="in_transit">In Transit</option>
-                    <option value="customs_hold">Customs Hold</option>
-                    <option value="delivered">Delivered</option>
-                    <option value="cancelled">Cancelled</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Current Location</label>
-                  <input
-                    type="text"
-                    value={form.current_location}
-                    onChange={(e) => setForm({ ...form, current_location: e.target.value })}
-                    placeholder="City, Country"
-                    className="w-full border rounded px-3 py-2"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Estimated Delivery Date</label>
-                  <input
-                    type="date"
-                    value={form.estimated_delivery}
-                    onChange={(e) => setForm({ ...form, estimated_delivery: e.target.value })}
-                    className="w-full border rounded px-3 py-2"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Notes</label>
-                  <textarea
-                    rows={3}
-                    value={form.notes}
-                    onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                    className="w-full border rounded px-3 py-2"
-                  />
-                </div>
-                <div className="flex gap-3">
-                  <button type="submit" className="flex-1 bg-blue-600 text-white py-2 rounded-lg">
-                    {editingShipment ? "Save Changes" : "Create Shipment"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowForm(false)}
-                    className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            </div>
           </div>
         )}
       </div>
