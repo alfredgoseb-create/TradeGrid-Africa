@@ -152,7 +152,7 @@ export default function ProductDetailPage() {
   if (!product) return null;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 overflow-y-auto">
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center flex-wrap gap-4">
           <h1 className="text-2xl font-bold">
@@ -229,7 +229,7 @@ export default function ProductDetailPage() {
 
         {/* Contact Form Modal */}
         {showContactForm && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center p-4 z-50 overflow-y-auto">
             <div className="bg-white rounded-xl max-w-md w-full p-6 max-h-screen overflow-y-auto">
               <h3 className="text-xl font-bold mb-4">Inquire about {product.name}</h3>
               <form onSubmit={handleSendInquiry} className="space-y-4">
@@ -256,7 +256,7 @@ export default function ProductDetailPage() {
 
         {/* Order Form Modal */}
         {showOrderForm && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center p-4 z-50 overflow-y-auto">
             <div className="bg-white rounded-xl max-w-md w-full p-6 max-h-screen overflow-y-auto">
               <h3 className="text-xl font-bold mb-4">Order {product.name}</h3>
               <form onSubmit={handlePlaceOrder} className="space-y-4">
